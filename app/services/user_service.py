@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.models.user import User
-from typing import Optional, List
+from typing import Optional, List, Sequence
 from icecream import ic
 
 class UserService:
@@ -14,7 +14,7 @@ class UserService:
         """
         result = await self.db.execute(select(User)) 
         users = result.scalars().all()
-        return users
+        return list(users)  # Convert Sequence to List
     
     async def get_user(self, user_id: int) -> Optional[User]:
         """

@@ -1,5 +1,6 @@
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import declarative_base
+from typing import AsyncGenerator
 from app.core.config import settings
 
 # Ensure DATABASE_URL uses psycopg driver
@@ -34,9 +35,9 @@ AsyncSessionLocal = async_sessionmaker(
 Base = declarative_base()
 
 # Dependency to get database session
-async def get_db() -> AsyncSession:
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """
-    Dependancy function that yields a database session
+    Dependency function that yields a database session
     """
     async with AsyncSessionLocal() as session:
         try:
