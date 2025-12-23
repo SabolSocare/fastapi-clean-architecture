@@ -3,6 +3,7 @@ from sqlalchemy import select
 from app.models.user import User
 from typing import Optional, List, Sequence
 from icecream import ic
+from app.core.security import get_password_hash
 
 class UserService:
     def __init__(self, db: AsyncSession):
@@ -14,7 +15,7 @@ class UserService:
         """
         result = await self.db.execute(select(User)) 
         users = result.scalars().all()
-        return list(users)  # Convert Sequence to List
+        return list[User](users)  # Convert Sequence to List
     
     async def get_user(self, user_id: int) -> Optional[User]:
         """
@@ -36,6 +37,8 @@ class UserService:
         """
         Create a new user.
         """
+        # Password hashing
+        hashed_password = get_password_hash(hashed_password)
         db_user = User(
             email=email,
             username=username,

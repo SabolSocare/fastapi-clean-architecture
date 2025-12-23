@@ -3,6 +3,7 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.125.0-009688?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![Python](https://img.shields.io/badge/Python-3.13+-3776AB?style=flat&logo=python&logoColor=white)](https://www.python.org/)
 [![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0.45-EE0000?style=flat&logo=sqlalchemy&logoColor=white)](https://www.sqlalchemy.org/)
+[![Alembic](https://img.shields.io/badge/Alembic-1.13.2-FF6B6B?style=flat&logo=alembic&logoColor=white)](https://alembic.sqlalchemy.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Latest-336791?style=flat&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 
 A production-ready FastAPI backend template with clean layered architecture, following best practices for separation of concerns, dependency injection, and maintainability.
@@ -19,9 +20,12 @@ A production-ready FastAPI backend template with clean layered architecture, fol
 - [Project Structure](#-project-structure)
 - [Quick Start](#-quick-start)
 - [Setup Instructions](#-setup-instructions)
+- [Database Migrations](#️-database-migrations)
 - [Development Flow](#-development-flow)
 - [API Flow Example](#-api-flow-example)
 - [Adding New Features](#-adding-new-features)
+- [Common Commands](#️-common-commands)
+- [Additional Resources](#-additional-resources)
 - [License](#-license)
 
 ---
@@ -31,7 +35,9 @@ A production-ready FastAPI backend template with clean layered architecture, fol
 - 🏗️ **Clean Layered Architecture** - Separation of concerns with API, Schemas, Services, Models, and Database layers
 - 🔌 **Dependency Injection** - FastAPI dependency injection for services and database sessions
 - 🗄️ **Async Database** - SQLAlchemy async with PostgreSQL support
-- ✅ **Type Safety** - Pydantic schemas for request/response validation
+- 🔄 **Database Migrations** - Alembic for version-controlled database schema management
+- ✅ **Type Safety** - Pydantic v2 schemas for request/response validation
+- 🔐 **Password Hashing** - Bcrypt for secure password storage
 - 🐳 **Docker Support** - Containerized PostgreSQL database setup
 - 📝 **Auto Documentation** - Interactive API docs with Swagger UI and ReDoc
 - 🔄 **Scalable Structure** - Easy to extend with new features
@@ -44,8 +50,10 @@ A production-ready FastAPI backend template with clean layered architecture, fol
 This is a FastAPI-based backend application with:
 - **FastAPI** - Modern, fast web framework
 - **SQLAlchemy** - Async ORM for database operations
+- **Alembic** - Database migration tool
 - **PostgreSQL** - Relational database
-- **Pydantic** - Data validation using Python type annotations
+- **Pydantic v2** - Data validation using Python type annotations
+- **Bcrypt** - Password hashing
 - **Docker** - Containerized PostgreSQL database
 
 ---
@@ -118,20 +126,27 @@ backend/
 │   ├── db/                     # Database Layer
 │   │   ├── __init__.py
 │   │   ├── session.py          # Database session & engine
-│   │   └── base.py             # Database initialization
+│   │   └── base.py             # Database connection verification
 │   │
 │   └── core/                   # Core Configuration
 │       ├── __init__.py
-│       └── config.py           # Application settings
+│       ├── config.py           # Application settings (Pydantic v2)
+│       └── security.py         # Security utilities (password hashing)
+│
+├── alembic/                    # Database Migrations
+│   ├── versions/               # Migration files
+│   ├── env.py                  # Alembic environment configuration
+│   └── script.py.mako          # Migration template
 │
 ├── postgres_db/                # Docker PostgreSQL setup
-│   └── docker-compose.yml
+│   ├── docker-compose.yml
+│   └── *.sh                    # Database management scripts
 │
-├── test/                       # Test files
-│
-├── requirements.txt            # Python dependencies
-├── .env                        # Environment variables (create this)
-└── README.md                   # This file
+├── alembic.ini                  # Alembic configuration
+├── migrate.sh                   # Migration helper script
+├── requirements.txt             # Python dependencies
+├── .env                         # Environment variables (create this)
+└── README.md                    # This file
 ```
 
 ### Layer Responsibilities
@@ -237,14 +252,26 @@ API_V1_STR=/api/v1
 SKIP_DB_INIT=False
 ```
 
-### Step 6: Run the Application
+### Step 6: Run Database Migrations
+
+```bash
+# From the backend root directory
+# Apply all pending migrations
+./migrate.sh upgrade
+# or
+alembic upgrade head
+```
+
+**Important**: Always run migrations before starting the application, especially in production.
+
+### Step 7: Run the Application
 
 ```bash
 # From the backend root directory
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-### Step 7: Verify Setup
+### Step 8: Verify Setup
 
 1. **Health Check**: http://localhost:8000/health
 2. **API Docs**: http://localhost:8000/docs (Swagger UI)
@@ -289,6 +316,59 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 ---
 
+## 🗄️ Database Migrations
+
+This project uses **Alembic** for database migrations. Migrations allow you to:
+- Version control your database schema
+- Safely update production databases
+- Roll back changes if needed
+- Track schema history
+
+### Quick Migration Commands
+
+```bash
+# Apply all pending migrations
+./migrate.sh upgrade
+# or
+alembic upgrade head
+
+# Create a new migration (after modifying models)
+./migrate.sh revision "Description of changes"
+# or
+alembic revision --autogenerate -m "Description of changes"
+
+# View migration history
+./migrate.sh history
+# or
+alembic history
+
+# Check current database revision
+./migrate.sh current
+# or
+alembic current
+
+# Rollback one revision
+alembic downgrade -1
+```
+
+### Migration Workflow
+
+1. **Modify your SQLAlchemy model** in `app/models/`
+2. **Create a migration**: `alembic revision --autogenerate -m "Description"`
+3. **Review the generated migration** in `alembic/versions/`
+4. **Apply the migration**: `alembic upgrade head`
+
+### Important Notes
+
+- **Always review** auto-generated migrations before applying
+- **Never edit** migrations that have been applied to production
+- **Run migrations separately** from application startup in production
+- **Backup your database** before running migrations in production
+
+For more details, see the migration files in `alembic/versions/` or run `./migrate.sh` for help.
+
+---
+
 ## 📝 API Flow Example: Creating a User
 
 Let's trace through the complete flow when creating a user:
@@ -330,6 +410,15 @@ class UserCreate(BaseModel):
     email: str      # Validates email format
     username: str   # Validates string type
     password: str   # Validates string type
+
+class UserRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)  # Pydantic v2 syntax
+    
+    id: int
+    email: str
+    username: str
+    is_active: bool
+    created_at: datetime
 ```
 
 **What happens:**
@@ -421,25 +510,31 @@ class Product(Base):
 from app.models.product import Product  # Add import
 ```
 
-### Step 3: Create Schemas
+### Step 3: Create Migration
+```bash
+# Create a migration for the new model
+alembic revision --autogenerate -m "Add product model"
+alembic upgrade head
+```
+
+### Step 4: Create Schemas
 **File**: `app/schemas/product.py`
 ```python
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 class ProductCreate(BaseModel):
     name: str
     price: int
 
 class ProductRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)  # Pydantic v2 syntax
+    
     id: int
     name: str
     price: int
-    
-    class Config:
-        from_attributes = True
 ```
 
-### Step 4: Create Service
+### Step 5: Create Service
 **File**: `app/services/product_service.py`
 ```python
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -462,7 +557,7 @@ class ProductService:
         return product
 ```
 
-### Step 5: Add Dependency (if needed)
+### Step 6: Add Dependency (if needed)
 **File**: `app/api/v1/dependencies.py`
 ```python
 from app.services.product_service import ProductService
@@ -471,7 +566,7 @@ async def get_product_service(db: AsyncSession = Depends(get_db)) -> ProductServ
     return ProductService(db)
 ```
 
-### Step 6: Create API Routes
+### Step 7: Create API Routes
 **File**: `app/api/v1/product.py`
 ```python
 from fastapi import APIRouter, Depends
@@ -490,7 +585,7 @@ async def create_product(product: ProductCreate, service: ProductService = Depen
     return await service.create_product(product.name, product.price)
 ```
 
-### Step 7: Register Router
+### Step 8: Register Router
 **File**: `app/api/v1/__init__.py`
 ```python
 from app.api.v1.product import router as product_router
@@ -506,14 +601,16 @@ When building a new feature from scratch:
 
 1. **`core/config.py`** - Configuration settings
 2. **`db/session.py`** - Database engine & session
-3. **`db/base.py`** - Database initialization
+3. **`db/base.py`** - Database connection verification
 4. **`models/your_model.py`** - Database model
-5. **`schemas/your_schema.py`** - Request/response schemas
-6. **`services/your_service.py`** - Business logic
-7. **`api/v1/dependencies.py`** - Dependency functions (if needed)
-8. **`api/v1/your_route.py`** - API endpoints
-9. **`api/v1/__init__.py`** - Register router
-10. **`main.py`** - Application entry point
+5. **Create migration** - `alembic revision --autogenerate -m "Add your_model"`
+6. **Apply migration** - `alembic upgrade head`
+7. **`schemas/your_schema.py`** - Request/response schemas (Pydantic v2)
+8. **`services/your_service.py`** - Business logic
+9. **`api/v1/dependencies.py`** - Dependency functions (if needed)
+10. **`api/v1/your_route.py`** - API endpoints
+11. **`api/v1/__init__.py`** - Register router
+12. **`main.py`** - Application entry point
 
 ---
 
@@ -521,30 +618,64 @@ When building a new feature from scratch:
 
 - [FastAPI Documentation](https://fastapi.tiangolo.com/)
 - [SQLAlchemy Async Documentation](https://docs.sqlalchemy.org/en/20/orm/extensions/asyncio.html)
-- [Pydantic Documentation](https://docs.pydantic.dev/)
+- [Pydantic v2 Documentation](https://docs.pydantic.dev/)
+- [Alembic Documentation](https://alembic.sqlalchemy.org/)
 
 ---
 
 ## 🛠️ Common Commands
+
+### Application
 
 ```bash
 # Activate virtual environment
 source venv/bin/activate
 
 # Run application
-uvicorn app.main:app --reload
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
 
-# Check database connection
-python test/test_db_connection.py
+### Database Migrations
 
+```bash
+# Apply all pending migrations
+./migrate.sh upgrade
+# or
+alembic upgrade head
+
+# Create a new migration
+./migrate.sh revision "Description"
+# or
+alembic revision --autogenerate -m "Description"
+
+# View migration history
+./migrate.sh history
+# or
+alembic history
+
+# Check current revision
+./migrate.sh current
+# or
+alembic current
+
+# Rollback one revision
+alembic downgrade -1
+```
+
+### Docker Database
+
+```bash
 # View Docker containers
 cd postgres_db && docker-compose ps
+
+# Start database
+cd postgres_db && docker-compose up -d
 
 # Stop database
 cd postgres_db && docker-compose stop
 
-# Start database
-cd postgres_db && docker-compose up -d
+# Restart database
+cd postgres_db && docker-compose restart
 ```
 
 ---

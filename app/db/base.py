@@ -5,32 +5,33 @@ from app.models.user import User  # Import User model
 
 async def init_db():
     """
-    Initialize database - create all tables.
-    Call this on application startup.
+    Initialize database - verify connection.
+    
+    Note: Database migrations should be run separately using Alembic:
+    - Development: ./migrate.sh upgrade
+    - Production: alembic upgrade head
+    
+    This function only verifies the database connection.
     """
-    import asyncio
+    from app.core.config import settings
+    
+    # If SKIP_DB_INIT is True, skip database initialization
+    if settings.SKIP_DB_INIT:
+        print("⚠ Skipping database initialization (SKIP_DB_INIT=True)")
+        print("⚠ Make sure to run migrations manually: alembic upgrade head")
+        return
+    
     try:
-        # Try to connect with a timeout (5 seconds)
-        await asyncio.wait_for(
-            _create_tables(),
-            timeout=5.0
-        )
-        print("✓ Database tables created successfully")
-    except asyncio.TimeoutError:
-        print("⚠ Warning: Database connection timeout (5s)")
-        print("⚠ The application will start, but database operations may fail.")
-        print("⚠ Please check your DATABASE_URL in .env file and ensure the database is accessible.")
+        # Just verify connection - migrations should be run separately
+        from sqlalchemy import text
+        async with engine.begin() as conn:
+            await conn.execute(text("SELECT 1"))
+        print("✓ Database connection verified")
+        print("ℹ Run migrations with: alembic upgrade head")
     except Exception as e:
         error_msg = str(e)
-        print(f"⚠ Warning: Could not initialize database")
+        print(f"⚠ Warning: Could not connect to database")
         print(f"⚠ Error: {error_msg[:200]}...")  # Truncate long error messages
         print("⚠ The application will start, but database operations may fail.")
         print("⚠ Please check your DATABASE_URL in .env file and ensure the database is accessible.")
         # Don't raise - allow app to start even if DB is unavailable
-
-
-async def _create_tables():
-    """Helper function to create tables."""
-    async with engine.begin() as conn:
-        # This will create all tables defined in your models
-        await conn.run_sync(Base.metadata.create_all)

@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from app.schemas.user import UserCreate, UserRead
 from app.services.user_service import UserService
 from app.api.v1.dependencies import get_user_service
+from icecream import ic
 
 router = APIRouter()
 

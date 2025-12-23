@@ -1,5 +1,5 @@
-from pydantic import BaseModel
-
+from pydantic import BaseModel, ConfigDict
+from datetime import datetime
 
 class UserCreate(BaseModel):
     """Schema for creating a new user."""
@@ -10,11 +10,11 @@ class UserCreate(BaseModel):
 
 class UserRead(BaseModel):
     """Schema for reading/returning user data."""
+    model_config = ConfigDict(from_attributes=True)
+    
     id: int
     email: str
     username: str
     is_active: bool
-    
-    class Config:
-        from_attributes = True
+    created_at: datetime
 
