@@ -264,6 +264,29 @@ alembic upgrade head
 
 **Important**: Always run migrations before starting the application, especially in production.
 
+#### For New Projects / Customization
+
+If you're cloning this project to start your own project, you have two options:
+
+**Option 1: Keep the existing migration history** (Recommended for learning)
+- The initial migration creates the `users` table
+- Simply run `alembic upgrade head` to apply it
+- Create new migrations as you modify models
+
+**Option 2: Start fresh with your own migration history**
+```bash
+# Delete the existing migration
+rm -rf alembic/versions/*.py
+
+# Create your own initial migration
+alembic revision --autogenerate -m "Initial migration"
+
+# Apply it
+alembic upgrade head
+```
+
+This gives you a clean migration history for your custom project.
+
 ### Step 7: Run the Application
 
 ```bash
