@@ -2,6 +2,7 @@ from app.db.session import Base, engine
 
 # Import all models here so they are registered with SQLAlchemy
 from app.models.user import User  # Import User model
+from app.models.student import Student  # Import Student model
 
 async def init_db():
     """
